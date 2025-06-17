@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+langchain
+transformers
+torch
+sentence-transformers
+langchain_community
+langchain-core
+langchain-text-splitters
+huggingface-hub
+pypdf
+langchain-google-vertexai google-cloud-aiplatform
+langchain_chroma
+faiss-cpu
+langserve
