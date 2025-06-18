@@ -71,3 +71,9 @@ After the service is running, you can deploy it using Langserve in the following
 https://localhost:5000/langserve/chat/playground
 https://localhost:5000/langserve/generative_ai/playground
 ```
+### Streamlit 
+You can also deploy the service using Streamlit with the following command:
+
+```bash
+streamlit run src/streamlit.py
+```
