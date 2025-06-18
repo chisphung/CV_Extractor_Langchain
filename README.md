@@ -3,6 +3,7 @@
 ## 1. Setup
 
 ### 1.1. Donwload data
+My implementation of the Langchain Services is based on the [AIO Project Langchain Services](https://github.com/ThuanNaN/Langchain_Services/)
 
 This repository uses data from the [Ciriculum Vitae (CV) dataset](https://github.com/arefinnomi/curriculum_vitae_data). You can download the full dataset and other necessary files using the following commands:
 
