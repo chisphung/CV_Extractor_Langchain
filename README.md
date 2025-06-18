@@ -16,7 +16,7 @@ cd data_source/generative_ai && python download.py
 Python version: `3.11.9`
 
 ```bash
-pip3 install -r dev_requirements.txt
+pip3 install -r requirements.txt
 # Start the server
 uvicorn src.app:app --host "0.0.0.0" --port 5000 --reload
 ```
@@ -64,4 +64,11 @@ Search for candidates:
 curl -X POST -H "Content-Type: application/json" \
      -d '{"query": "python developer"}' \
      http://localhost:5000/search_candidates
+```
+## Deployment
+### Langserve 
+After the service is running, you can deploy it using Langserve in the following url:
+```
+https://localhost:5000/langserve/chat/playground
+https://localhost:5000/langserve/generative_ai/playground
 ```
