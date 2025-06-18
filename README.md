@@ -11,7 +11,7 @@ This repository uses data from the [Ciriculum Vitae (CV) dataset](https://github
 data_source/generative_ai/download.sh
 ```
 Note that the dataset contains over 3000 CVs, which could be resulted in incorrect parsing results. Our repository also provides a subset of the dataset with about 50 CVs for testing purposes.
-```bash
+
 ### 1.2. Run service in local
 
 Python version: `3.11.9`
