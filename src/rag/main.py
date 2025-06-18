@@ -13,7 +13,7 @@ class OutputQA(BaseModel):
 
 
 def build_rag_chain(llm, data_dir, data_type):
-    doc_loaded = Loader(file_type=data_type).load_dir(data_dir, workers=2)
+    doc_loaded = Loader(file_type=data_type).load_dir(data_dir, workers=7)
     db = CandidateDB()
     db.build_db(doc_loaded)
     retriever = db.get_retriever()

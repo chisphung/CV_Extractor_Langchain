@@ -1,9 +1,10 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from langserve import add_routes
+from typing import List, Any
 from src.base.llm_model import get_llm
-from src.rag.file_loader import load_cv, load_from_sources, split_documents
+from src.rag.file_loader import Loader, Exporter
 from src.rag.cv_extractor import CVExtractor
 from src.rag.vectorstore import CandidateDB
 from src.rag.main import build_rag_chain, InputQA, OutputQA
@@ -35,31 +36,33 @@ chat_chain = build_chat_chain(llm,
                               history_folder="./chat_histories",
                               max_history_length=6)
 
-
 @app.post("/upload_cv")
-async def upload_cv(file: UploadFile = File(None), drive_link: str | None = None):
+async def upload_cv(
+    file: List[UploadFile] = File(None),
+    drive_link: str = Form(None)
+):
     os.makedirs("./data_source/generative_ai", exist_ok=True)
-
     sources = []
-    if file is not None:
-        file_path = f"./data_source/generative_ai/{file.filename}"
-        with open(file_path, "wb") as f:
-            content = await file.read()
-            f.write(content)
-        sources.append(file_path)
+
+    if file:
+        for f in file:
+            file_path = f"./data_source/generative_ai/{f.filename}"
+            with open(file_path, "wb") as out_file:
+                content = await f.read()
+                out_file.write(content)
+            sources.append(file_path)
 
     if drive_link:
         sources.append(drive_link)
 
-    docs = load_from_sources(sources)
-    chunks = split_documents(docs)
-    extracted_data = extractor.extract(chunks)
+    # Load all files with multiprocessing-aware loader
+    loader = Loader(file_type="pdf")
+    docs = loader.load(sources, workers=7)
 
-    candidate_db.add_documents(chunks)
-    print("Candidate DB updated with new CVs")
+    extracted_data = extractor.extract(docs)
+    candidate_db.add_documents(docs)
 
-    return {"message": "CV processed", "extracted": extracted_data}
-
+    return {"message": "CVs processed", "extracted": extracted_data}
 
 class SearchRequest(BaseModel):
     query: str
@@ -72,6 +75,16 @@ async def search_candidates(req: SearchRequest):
         {"text": doc.page_content, "metadata": doc.metadata} for doc in results
     ]
     return {"matches": matches}
+
+class ExportRequest(BaseModel):
+    data: Any
+    outdir: str
+
+@app.post("/export_candidates")
+async def export_candidates(req: ExportRequest):
+    exporter = Exporter(export_dir=req.outdir, file_name="candidates.json")
+    file_path = exporter(req.data)
+    return {"message": "Candidates exported", "file_path": file_path}
 
 @app.post("/generative_ai", response_model=OutputQA)
 async def generative_ai(inputs: InputQA):

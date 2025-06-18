@@ -1,5 +1,6 @@
 from typing import List
 import re
+import json
 from langchain_core.output_parsers import StrOutputParser
 
 
@@ -35,3 +36,17 @@ class Str_OutputParser(StrOutputParser):
                 default_answer = output_text
         
         return output_text
+
+def json_clean(raw_blocks):
+    cleaned_results = []
+    
+    for block in raw_blocks:
+        json_str = re.sub(r"^```json\s*|\s*```$", "", block.strip(), flags=re.MULTILINE)
+        
+        try:
+            data = json.loads(json_str)
+            cleaned_results.append(data)
+        except json.JSONDecodeError as e:
+            print(f"Failed to parse: {e}")
+    
+    return cleaned_results

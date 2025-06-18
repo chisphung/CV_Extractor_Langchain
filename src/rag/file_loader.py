@@ -6,7 +6,7 @@ import multiprocessing
 import gdown
 from pathlib import Path
 import zipfile
-import shutil
+import json
 from langchain_community.document_loaders import PyPDFLoader, BSHTMLLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -87,7 +87,6 @@ def split_documents(docs):
     return splitter.split_documents(docs)
 def get_num_cpu():
     return multiprocessing.cpu_count()
-
 
 class BaseLoader:
     def __init__(self) -> None:
@@ -179,3 +178,15 @@ class Loader:
             files = glob.glob(f"{dir_path}/*.html")
             assert len(files) > 0, f"No {self.file_type} files found in {dir_path}"
         return self.load(files, workers=workers)
+    
+class Exporter:
+    def __init__(self, export_dir: str, file_name: str = "candidates.json"):
+        self.export_dir = export_dir
+        self.file_name = file_name
+
+    def __call__(self, data):
+        os.makedirs(self.export_dir, exist_ok=True)
+        file_path = os.path.join(self.export_dir, self.file_name)
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return file_path

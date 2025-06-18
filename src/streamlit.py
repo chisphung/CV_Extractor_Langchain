@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
-
+import json
+import os
+import chat.output_parser as output_parser
 API_URL = "http://localhost:5000"  # Change if deployed
 
 st.set_page_config(page_title="CV Analyzer", layout="centered")
@@ -33,10 +35,41 @@ if st.button("Upload & Extract"):
                 response = requests.post(f"{API_URL}/upload_cv", data=data)
 
             result = response.json()
+            extracted = result.get("extracted", [])
+            st.session_state["extracted_candidates"] = extracted
+            st.session_state["last_export_path"] = None  # Reset previous export path
+
             st.success("CV processed successfully!")
             st.json(result)
+
         except Exception as e:
             st.error(f"Failed to upload: {e}")
+
+# --- Export Section ---
+st.header("Export Candidates")
+export_dir = st.text_input("Export directory", "./exported_candidates")
+
+if st.button("Export Candidates"):
+    if "extracted_candidates" not in st.session_state or not st.session_state["extracted_candidates"]:
+        st.error("Please upload and extract CVs first.")
+    else:
+        with st.spinner("Exporting candidates..."):
+            try:
+                export_payload = {
+                    "data": output_parser.json_clean(st.session_state["extracted_candidates"]),
+                    "outdir": export_dir
+                }
+                response = requests.post(f"{API_URL}/export_candidates", json=export_payload)
+                export_result = response.json()
+
+                st.session_state["last_export_path"] = export_result["file_path"]
+
+                st.success(f"Candidates exported successfully to {export_result['file_path']}")
+                st.json(export_result)
+
+            except Exception as e:
+                st.error(f"Export failed: {e}")
+
 
 # --- Search Section ---
 st.header("Search Candidates")
@@ -55,7 +88,7 @@ if st.button("Search") and search_query:
             st.error(f"Search failed: {e}")
 
 # --- Q&A Section ---
-st.header("Ask a Question to find candidates or any questions")
+st.header("Ask a Question")
 question = st.text_input("Enter your question")
 if st.button("Ask") and question:
     with st.spinner("Getting answer..."):
