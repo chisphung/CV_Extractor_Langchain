@@ -34,3 +34,34 @@ Turn off service
 ```bash
 docker compose -f down
 ```
+
+## 2. Architecture
+
+The service ingests CV PDFs from local files or Google Drive links, extracts
+information using an LLM and stores embeddings in a FAISS vector store. The
+workflow is:
+
+`ingestion -> extraction -> storage -> search`.
+
+### Modules
+
+- **src/rag/file_loader.py** – download/load and split documents.
+- **src/rag/cv_extractor.py** – prompt chain for CV parsing.
+- **src/rag/vectorstore.py** – persistent FAISS store with metadata support.
+- **src/app.py** – FastAPI server exposing upload and search endpoints.
+
+### API Usage
+
+Upload a CV from a local file:
+
+```bash
+curl -X POST -F "file=@resume.pdf" http://localhost:5000/upload_cv
+```
+
+Search for candidates:
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"query": "python developer"}' \
+     http://localhost:5000/search_candidates
+```

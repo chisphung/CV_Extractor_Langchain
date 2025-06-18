@@ -1,9 +1,27 @@
 from typing import Union, List, Literal
 import glob
+import os
 from tqdm import tqdm
 import multiprocessing
+import gdown
 from langchain_community.document_loaders import PyPDFLoader, BSHTMLLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+
+def fetch_pdfs(sources: List[str], dest_dir: str = "./tmp/pdfs") -> List[str]:
+    """Fetch pdf files from local paths or Google Drive links."""
+    os.makedirs(dest_dir, exist_ok=True)
+    pdf_paths = []
+    for src in sources:
+        if src.startswith("http"):
+            out = os.path.join(dest_dir, os.path.basename(src))
+            gdown.download(url=src, output=out, quiet=True, fuzzy=True)
+            pdf_paths.append(out)
+        elif os.path.isdir(src):
+            pdf_paths.extend(glob.glob(os.path.join(src, "*.pdf")))
+        elif os.path.isfile(src) and src.endswith(".pdf"):
+            pdf_paths.append(src)
+    return pdf_paths
 
 
 
@@ -19,6 +37,13 @@ def load_pdf(pdf_file):
 def load_cv(file_path):
     loader = PyPDFLoader(file_path)
     docs = loader.load()
+    return docs
+
+def load_from_sources(sources: List[str]) -> List:
+    files = fetch_pdfs(sources)
+    docs = []
+    for f in files:
+        docs.extend(load_cv(f))
     return docs
 
 def load_html(html_file):

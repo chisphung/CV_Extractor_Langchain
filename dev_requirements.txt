@@ -9,7 +9,9 @@ langchain-core
 langchain-text-splitters
 huggingface-hub
 pypdf
-langchain-google-vertexai google-cloud-aiplatform
+langchain-google-vertexai
+google-cloud-aiplatform
 langchain_chroma
 faiss-cpu
 langserve
+gdown

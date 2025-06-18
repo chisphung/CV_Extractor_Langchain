@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from langserve import add_routes
 from src.base.llm_model import get_llm
-from src.rag.file_loader import load_cv, split_documents
+from src.rag.file_loader import load_cv, load_from_sources, split_documents
 from src.rag.cv_extractor import CVExtractor
 from src.rag.vectorstore import CandidateDB
 from src.rag.main import build_rag_chain, InputQA, OutputQA
@@ -37,19 +37,25 @@ chat_chain = build_chat_chain(llm,
 
 
 @app.post("/upload_cv")
-async def upload_cv(file: UploadFile = File(...)):
+async def upload_cv(file: UploadFile = File(None), drive_link: str | None = None):
     os.makedirs("./data_source/generative_ai", exist_ok=True)
 
-    file_path = f"./data_source/generative_ai/{file.filename}"
-    with open(file_path, "wb") as f:
-        content = await file.read()
-        f.write(content)
+    sources = []
+    if file is not None:
+        file_path = f"./data_source/generative_ai/{file.filename}"
+        with open(file_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        sources.append(file_path)
 
-    docs = load_cv(file_path)
+    if drive_link:
+        sources.append(drive_link)
+
+    docs = load_from_sources(sources)
     chunks = split_documents(docs)
     extracted_data = extractor.extract(chunks)
 
-    candidate_db.build_db(chunks)
+    candidate_db.add_documents(chunks)
     print("Candidate DB updated with new CVs")
 
     return {"message": "CV processed", "extracted": extracted_data}
@@ -57,11 +63,15 @@ async def upload_cv(file: UploadFile = File(...)):
 
 class SearchRequest(BaseModel):
     query: str
+    filter: dict | None = None
 
 @app.post("/search_candidates")
 async def search_candidates(req: SearchRequest):
     results = candidate_db.search(req.query)
-    return {"matches": [doc.page_content for doc in results]}
+    matches = [
+        {"text": doc.page_content, "metadata": doc.metadata} for doc in results
+    ]
+    return {"matches": matches}
 
 @app.post("/generative_ai", response_model=OutputQA)
 async def generative_ai(inputs: InputQA):
