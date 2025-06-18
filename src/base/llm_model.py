@@ -1,5 +1,5 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from get_token import get_token
+from src.base.get_token import get_token
 
 def get_llm(model: str = "gemini-2.0-flash", temperature: float = 0.0, max_tokens: int = None, **kwargs):
     """

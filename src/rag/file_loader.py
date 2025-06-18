@@ -4,24 +4,54 @@ import os
 from tqdm import tqdm
 import multiprocessing
 import gdown
+from pathlib import Path
+import zipfile
+import shutil
 from langchain_community.document_loaders import PyPDFLoader, BSHTMLLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
-def fetch_pdfs(sources: List[str], dest_dir: str = "./tmp/pdfs") -> List[str]:
-    """Fetch pdf files from local paths or Google Drive links."""
+def fetch_pdfs(sources: List[str], dest_dir: str = "./data_source/generative_ai/curriculum_vitae_data") -> List[str]:
+    """Fetch pdf files from local paths, ZIP files, or Google Drive links."""
     os.makedirs(dest_dir, exist_ok=True)
     pdf_paths = []
+
     for src in sources:
         if src.startswith("http"):
-            out = os.path.join(dest_dir, os.path.basename(src))
-            gdown.download(url=src, output=out, quiet=True, fuzzy=True)
-            pdf_paths.append(out)
+            # Handle Google Drive links
+            if "folders" in src:
+                # Google Drive FOLDER
+                gdown.download_folder(url=src, output=dest_dir, quiet=False, use_cookies=False)
+            else:
+                # Google Drive FILE (could be PDF or ZIP)
+                filename = os.path.basename(src)
+                download_path = os.path.join(dest_dir, filename)
+                gdown.download(url=src, output=download_path, quiet=True, fuzzy=True)
+
+                if zipfile.is_zipfile(download_path):
+                    with zipfile.ZipFile(download_path, "r") as zip_ref:
+                        zip_ref.extractall(dest_dir)
+                    os.remove(download_path)
+                elif download_path.endswith(".pdf"):
+                    pdf_paths.append(download_path)
+
         elif os.path.isdir(src):
-            pdf_paths.extend(glob.glob(os.path.join(src, "*.pdf")))
-        elif os.path.isfile(src) and src.endswith(".pdf"):
-            pdf_paths.append(src)
-    return pdf_paths
+            # Add all PDFs from the folder recursively
+            for pdf_file in Path(src).rglob("*.pdf"):
+                pdf_paths.append(str(pdf_file.resolve()))
+
+        elif os.path.isfile(src):
+            if src.endswith(".pdf"):
+                pdf_paths.append(src)
+            elif zipfile.is_zipfile(src):
+                with zipfile.ZipFile(src, "r") as zip_ref:
+                    zip_ref.extractall(dest_dir)
+
+    # Finally, collect all PDFs under dest_dir
+    for pdf_file in Path(dest_dir).rglob("*.pdf"):
+        pdf_paths.append(str(pdf_file.resolve()))
+
+    return list(set(pdf_paths))
 
 
 

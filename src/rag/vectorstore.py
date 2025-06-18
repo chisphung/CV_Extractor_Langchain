@@ -15,7 +15,7 @@ class CandidateDB:
     def add_documents(self, docs):
         if self.db is None:
             if os.path.exists(self.persist_dir):
-                self.db = FAISS.load_local(self.persist_dir, self.embedding)
+                self.db = FAISS.load_local(self.persist_dir, self.embedding, allow_dangerous_deserialization=True)
             else:
                 self.db = FAISS.from_documents(docs, self.embedding)
                 self.db.save_local(self.persist_dir)
@@ -26,7 +26,8 @@ class CandidateDB:
     def search(self, query, k=3):
         if self.db is None:
             if os.path.exists(self.persist_dir):
-                self.db = FAISS.load_local(self.persist_dir, self.embedding)
+                self.db = FAISS.load_local(self.persist_dir, self.embedding, allow_dangerous_deserialization=True)
+
             else:
                 raise ValueError("Database has not been built. Call build_db() with documents first.")
         return self.db.similarity_search(query, k=k)
@@ -34,7 +35,7 @@ class CandidateDB:
     def get_retriever(self, k=3):
         if self.db is None:
             if os.path.exists(self.persist_dir):
-                self.db = FAISS.load_local(self.persist_dir, self.embedding)
+                self.db = FAISS.load_local(self.persist_dir, self.embedding, allow_dangerous_deserialization=True)
             else:
                 raise ValueError("Database has not been built.")
         return self.db.as_retriever(search_kwargs={"k": k})

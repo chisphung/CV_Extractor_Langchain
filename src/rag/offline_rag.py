@@ -4,6 +4,8 @@ from tokenize import Name
 from langchain import hub
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda, RunnableMap
+from langchain_core.prompts import PromptTemplate
 
 
 class Str_OutputParser(StrOutputParser):
@@ -30,30 +32,28 @@ class Str_OutputParser(StrOutputParser):
 class Offline_RAG:
     def __init__(self, llm) -> None:
         self.llm = llm
-        self.prompt = """"Extract the following information from this CV text:
-                        - Full Name
-                        - Email and Contact
-                        - Education (institution, degree, year)
-                        - Work Experience (company, role, duration, achievements)
-                        - Skills
-                        - Certifications
-                        Return in JSON format.
-                        """
+        self.prompt = PromptTemplate.from_template(
+            """Extract the following information from this CV text:
+
+            {context}
+
+            Return in JSON format containing:
+            - Full Name
+            - Email and Contact
+            - Education (institution, degree, year)
+            - Work Experience (company, role, duration, achievements)
+            - Skills
+            - Certifications"""
+        )
         self.str_parser = Str_OutputParser()
 
     
     def get_chain(self, retriever):
-        input_data = {
-            "context": retriever | self.format_docs, 
+        chain = RunnableMap({
+            "context": retriever | RunnableLambda(self.format_docs),
             "question": RunnablePassthrough()
-        }
-        rag_chain = (
-            input_data
-            | self.prompt
-            | self.llm
-            | self.str_parser
-        )
-        return rag_chain
+        }) | self.prompt | self.llm | self.str_parser
+        return chain
 
     def format_docs(self, docs):
         return "\n\n".join(doc.page_content for doc in docs)
