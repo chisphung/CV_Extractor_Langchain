@@ -154,7 +154,9 @@ dmypy.json
 cython_debug/
 
 chat_histories/*.json
-/data_source/*/*.pdf
+# /data_source/*/*.pdf
 /data_source/*/*.html
+exported_candidates/*.json
+
 
 
