@@ -23,7 +23,7 @@ pip3 install -r requirements.txt
 # Start the server
 uvicorn src.app:app --host "0.0.0.0" --port 5000 --reload
 ```
-
+This will ask for the Google API key, which you can get from the [Google Cloud Console](https://aistudio.google.com/apikey). After providing the key, the server will start and you can access it at `http://localhost:5000/docs`.
 ### 1.3 Run service in docker
 
 ```bash
